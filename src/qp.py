@@ -203,25 +203,3 @@ class QP:
                 self.solver_logger.step(done=False)
 
         return self.x, self.compute_objective()
-
-
-if __name__ == "__main__":
-    # Example usage.
-    m = 300
-    n = 400
-
-    Q = np.random.randn(n, n)
-    Q = Q.T @ Q
-    c = np.random.randn(n)
-
-    a1 = np.ones(n)
-    a2 = np.zeros(n)
-    a2[0] = 1
-
-    A = np.vstack((a1, a2))
-
-    b = np.array([1, 0.1])
-
-    qp = QP(c, Q, A, b, verbose=True)
-
-    x, f = qp.solve()
