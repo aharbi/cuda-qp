@@ -22,7 +22,7 @@ class SolverLogger:
 
         print(
             "| {:>5} | {:>15.10f} | {:>15.10f} | {:>15.10f} |".format(
-                self.solver.k, primal_obj, dual_obj[0], gap[0]
+                self.solver.k, primal_obj, dual_obj, gap
             )
         )
 

@@ -37,7 +37,7 @@ class QP:
         self.m = self.A.shape[0]
         self.n = self.A.shape[1]
 
-        assert np.linalg.matrix_rank(A) == self.m
+        self.input_consistency()
 
         # Decision variables
         self.initialize_variables()
@@ -54,6 +54,20 @@ class QP:
 
         if self.verbose:
             self.solver_logger = SolverLogger(self)
+
+    def input_consistency(self):
+        assert len(self.Q.shape) == 2, "Q must be a matrix"
+        assert len(self.A.shape) == 2, "A must be a matrix"
+        assert len(self.c.shape) == 1, "c must be a vector"
+        assert len(self.b.shape) == 1, "b must be a vector"
+
+        assert self.Q.shape[0] <= self.Q.shape[1], "Q must be a square matrix."
+        assert self.m <= self.n, "The matrix A must have shape (m, n), where m <= n."
+
+        assert np.linalg.matrix_rank(self.A) == self.m, "A must be full rank."
+
+        assert self.c.shape[0] == self.n, "c must be an n-dimensional vector"
+        assert self.b.shape[0] == self.m, "b must be an m-dimensional vector"
 
     def initialize_variables(self):
         self.x = np.ones(self.n)
@@ -189,7 +203,7 @@ class QP:
 
 
 if __name__ == "__main__":
-    # Generate a random non-trivial quadratic program.
+    # Example usage.
     m = 300
     n = 400
 
@@ -197,8 +211,13 @@ if __name__ == "__main__":
     Q = Q.T @ Q
     c = np.random.randn(n)
 
-    A = np.ones((1, n))
-    b = 1
+    a1 = np.ones(n)
+    a2 = np.zeros(n)
+    a2[0] = 1
+
+    A = np.vstack((a1, a2))
+
+    b = np.array([1, 0.1])
 
     qp = QP(c, Q, A, b, verbose=True)
 
