@@ -4,7 +4,7 @@ Quadratic programming solver. Solves problems with the following form:
 
 $$ \min \quad c^T x + \frac{1}{2} x^T Q x $$ 
 
-s.t. $$ \quad A x = b,   \quad x \geq 0 $$
+$$ s.t. \quad A x = b,   \quad x \geq 0 $$
 
 Where $c \in \mathbb{R}^{n}$, $b \in \mathbb{R}^{m}$, $Q \in \mathbf{S}^{n}_{+}$, and $A\in \mathbb{R}^{m \times n}$ and has full row rank. It can be used as the following:
 
