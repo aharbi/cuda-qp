@@ -89,23 +89,45 @@ class QP:
 
         return alpha
 
-    def compute_direction(self):
+    def compute_direction(self, method="augmented"):
 
-        inf = np.hstack([self.xi_p, self.xi_d, self.xi_mu])
+        if method == "direct":
+            v = np.hstack([self.xi_p, self.xi_d, self.xi_mu])
 
-        kkt = np.block(
-            [
-                [self.A, np.zeros((self.m, self.m)), np.zeros((self.m, self.n))],
-                [-self.Q, self.A.T, np.eye(self.n)],
-                [np.diag(self.s), np.zeros((self.n, self.m)), np.diag(self.x)],
-            ]
-        )
+            Z = np.block(
+                [
+                    [self.A, np.zeros((self.m, self.m)), np.zeros((self.m, self.n))],
+                    [-self.Q, self.A.T, np.eye(self.n)],
+                    [np.diag(self.s), np.zeros((self.n, self.m)), np.diag(self.x)],
+                ]
+            )
 
-        delta = np.linalg.inv(kkt) @ inf
+            delta = np.linalg.inv(Z) @ v
 
-        delta_x = delta[: self.n]
-        delta_y = delta[self.n : (self.n + self.m)]
-        delta_s = delta[(self.n + self.m) :]
+            delta_x = delta[: self.n]
+            delta_y = delta[self.n : (self.n + self.m)]
+            delta_s = delta[(self.n + self.m) :]
+
+        elif method == "augmented":
+            X_inv = np.diag(1 / self.x)
+            S = np.diag(self.s)
+
+            phi_inv = S @ X_inv
+
+            v = np.hstack([self.xi_d - X_inv @ self.xi_mu, self.xi_p])
+
+            Z = np.block(
+                [
+                    [-self.Q - phi_inv, self.A.T],
+                    [self.A, np.zeros((self.m, self.m))],
+                ]
+            )
+
+            delta = np.linalg.inv(Z) @ v
+
+            delta_x = delta[: self.n]
+            delta_y = delta[self.n : (self.n + self.m)]
+            delta_s = X_inv @ (self.xi_mu - S @ delta_x)
 
         return delta_x, delta_y, delta_s
 
