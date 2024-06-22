@@ -1,12 +1,6 @@
 import numpy as np
 
-
-# TODO: Placeholder location for solver parameters
-ALPHA = 0.99
-SIGMA = 0.5
-TOL_PRIMAL = 1e-8
-TOL_DUAL = 1e-8
-TOL_OPT = 1e-8
+from logger import SolverLogger
 
 
 class QP:
@@ -17,7 +11,21 @@ class QP:
         A: np.ndarray,
         b: np.ndarray,
         verbose: bool = False,
+        solver_args=None,
     ):
+        # Solver args
+        default_solver_args = {
+            "alpha": 0.99,
+            "sigma": 0.5,
+            "tol_primal": 1e-8,
+            "tol_dual": 1e-8,
+            "tol_opt": 1e-8,
+        }
+
+        if solver_args is None:
+            solver_args = {}
+
+        self.solver_args = {**default_solver_args, **solver_args}
 
         # Problem data
         self.c = c
@@ -32,40 +40,45 @@ class QP:
         assert np.linalg.matrix_rank(A) == self.m
 
         # Decision variables
-        self.x = None
-        self.y = None
-        self.s = None
-
         self.initialize_variables()
 
         # Barrier parameter
         self.mu = np.inner(self.x, self.s) / self.n
 
         # Infeasiblities
-        self.xi_p = None
-        self.xi_d = None
-        self.xi_mu = None
-
         self.update_infeasiblities()
 
         self.k = 0
+
         self.verbose = verbose
+
+        if self.verbose:
+            self.solver_logger = SolverLogger(self)
 
     def initialize_variables(self):
         self.x = np.ones(self.n)
         self.y = np.zeros(self.m)
         self.s = np.ones(self.n)
 
+    def compute_objective(self):
+        return np.inner(self.c, self.x) + 0.5 * np.inner(self.x, self.Q @ self.x)
+
+    def compute_dual_objective(self):
+        return np.inner(self.b, self.y) - 0.5 * np.inner(self.x, self.Q @ self.x)
+
+    def compute_constraint_violation(self):
+        return self.xi_p
+
     def update_infeasiblities(self):
         self.xi_p = self.b - self.A @ self.x
         self.xi_d = self.c + self.Q @ self.x - self.A.T @ self.y - self.s
-        self.xi_mu = SIGMA * self.mu * np.ones(self.n) - np.diag(self.x) @ np.diag(
-            self.s
-        ) @ np.ones(self.n)
+        self.xi_mu = self.solver_args["sigma"] * self.mu * np.ones(self.n) - np.diag(
+            self.x
+        ) @ np.diag(self.s) @ np.ones(self.n)
 
     def compute_step_size(self, x, delta):
 
-        alphas = -x / delta
+        alphas = -1 * x / delta
 
         alpha_neg = alphas[delta <= 0]
 
@@ -99,7 +112,7 @@ class QP:
     def step(self):
 
         # Update barrier parameter
-        self.mu = SIGMA * self.mu
+        self.mu = self.solver_args["sigma"] * self.mu
 
         # Compute the netwon direction
         delta_x, delta_y, delta_s = self.compute_direction()
@@ -108,8 +121,8 @@ class QP:
         alpha_p = self.compute_step_size(self.x, delta_x)
         alpha_d = self.compute_step_size(self.s, delta_s)
 
-        alpha_p = ALPHA * alpha_p
-        alpha_d = ALPHA * alpha_d
+        alpha_p = self.solver_args["alpha"] * alpha_p
+        alpha_d = self.solver_args["alpha"] * alpha_d
 
         # Update the decision variables
         self.x = self.x + alpha_p * delta_x
@@ -138,49 +151,33 @@ class QP:
             tol_opt_cond = tol_opt_num / tol_opt_den
 
             if (
-                tol_primal_cond <= TOL_PRIMAL
-                and tol_dual_cond <= TOL_DUAL
-                and tol_opt_cond <= TOL_OPT
+                tol_primal_cond <= self.solver_args["tol_primal"]
+                and tol_dual_cond <= self.solver_args["tol_dual"]
+                and tol_opt_cond <= self.solver_args["tol_opt"]
             ):
+                self.solver_logger.step(done=True)
                 break
 
             self.step()
 
-        return self.x
+            if self.verbose:
+                self.solver_logger.step(done=False)
+
+        return self.x, self.compute_objective()
 
 
 if __name__ == "__main__":
     # Generate a random non-trivial quadratic program.
-    import cvxpy as cp
-    from datetime import datetime
-
-    m = 30
-    n = 40
-
-    # np.random.seed(1)
+    m = 300
+    n = 400
 
     Q = np.random.randn(n, n)
-    Q = np.zeros((n, n))  # Q.T @ Q
+    Q = Q.T @ Q
     c = np.random.randn(n)
 
     A = np.ones((1, n))
     b = 1
 
-    # Define and solve the CVXPY problem.
-    x = cp.Variable(n)
-    prob = cp.Problem(
-        cp.Minimize(c.T @ x + 0.5 * cp.quad_form(x, cp.psd_wrap(Q))),
-        [x >= 0, A @ x == b],
-    )
+    qp = QP(c, Q, A, b, verbose=True)
 
-    start = datetime.now()
-    prob.solve()
-    print(datetime.now() - start)
-
-    qp = QP(c, Q, A, b)
-
-    start = datetime.now()
-    x_qp = qp.solve()
-    print(datetime.now() - start)
-
-    print(np.linalg.norm(x_qp - x.value))
+    x_qp, f = qp.solve()
