@@ -96,7 +96,7 @@ class QP:
         kkt = np.block(
             [
                 [self.A, np.zeros((self.m, self.m)), np.zeros((self.m, self.n))],
-                [-self.Q, self.A.T, np.eye(n)],
+                [-self.Q, self.A.T, np.eye(self.n)],
                 [np.diag(self.s), np.zeros((self.n, self.m)), np.diag(self.x)],
             ]
         )
@@ -136,8 +136,8 @@ class QP:
 
     def solve(self):
 
-        norm_b = np.linalg.norm(b)
-        norm_c = np.linalg.norm(c)
+        norm_b = np.linalg.norm(self.b)
+        norm_c = np.linalg.norm(self.c)
 
         while True:
             tol_primal_cond = np.linalg.norm(self.xi_p) / (1 + norm_b)
@@ -180,4 +180,4 @@ if __name__ == "__main__":
 
     qp = QP(c, Q, A, b, verbose=True)
 
-    x_qp, f = qp.solve()
+    x, f = qp.solve()
