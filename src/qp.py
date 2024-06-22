@@ -64,6 +64,9 @@ class QP:
         assert self.Q.shape[0] <= self.Q.shape[1], "Q must be a square matrix."
         assert self.m <= self.n, "The matrix A must have shape (m, n), where m <= n."
 
+        assert (
+            np.min(np.linalg.eigvals(self.Q)) >= 0
+        ), "Q must be positive semi-definite"
         assert np.linalg.matrix_rank(self.A) == self.m, "A must be full rank."
 
         assert self.c.shape[0] == self.n, "c must be an n-dimensional vector"
