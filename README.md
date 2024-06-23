@@ -9,6 +9,8 @@ $$ s.t. \quad A x = b,   \quad x \geq 0 $$
 Where $c \in \mathbb{R}^{n}$, $b \in \mathbb{R}^{m}$, $Q \in \mathbf{S}^{n}_{+}$, and $A\in \mathbb{R}^{m \times n}$ and has full row rank. It can be used as the following:
 
 ```python
+from qp import *
+
 # Problem data
 m = 30
 n = 40
@@ -28,9 +30,9 @@ A = np.vstack((a1, a2))
 b = np.array([1, 0.1])
 
 # Generate an instance of the solver
-qp = QP(c, Q, A, b, verbose=True)
+problem = QP(c, Q, A, b, verbose=True)
 
-x, f = qp.solve()
+x, f = problem.solve()
 
 print("Decision variables:", x)
 print("Objective function value:", f)
