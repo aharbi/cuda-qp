@@ -9,7 +9,10 @@ $$ s.t. \quad A x = b,   \quad x \geq 0 $$
 Where $c \in \mathbb{R}^{n}$, $b \in \mathbb{R}^{m}$, $Q \in \mathbf{S}^{n}_{+}$, and $A\in \mathbb{R}^{m \times n}$ and has full row rank. It can be used as the following:
 
 ```python
+import numpy as np
+
 from qp import *
+
 
 # Problem data
 m = 30
